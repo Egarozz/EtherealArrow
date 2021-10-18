@@ -1,44 +1,42 @@
-package behaviors;
+package behaviors.player;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import entities.Player;
-import utils.Utils;
 
-public class HorizontalMovement implements MovementBehavior{
-	private Player player;
+public class DoubleJump implements MovementBehavior{
+	Player player;
 	
-	public HorizontalMovement(Player player) {
+	public DoubleJump(Player player) {
 		this.player = player;
 	}
-
 	@Override
 	public void left(float delta) {
-		player.deltaX = Utils.approach(player.deltaX, -player.RUN_SPEED, player.RUN_ACCELERATION * delta);
+		// TODO Auto-generated method stub
+		
 	}
 
 	@Override
 	public void right(float delta) {
-		player.deltaX = Utils.approach(player.deltaX, player.RUN_SPEED, player.RUN_ACCELERATION * delta);
+		// TODO Auto-generated method stub
 		
 	}
 
 	@Override
 	public void jump(float delta) {
-		if(!player.jumping && player.currentJump == 0) {
-			player.jumping = true;
-			
+		
+		if(player.currentJump < 2 && player.jumping) {
 			player.deltaY = player.JUMP_SPEED;
-			
+			player.currentJump++;
 		}
+		
+		
 	}
-
 	@Override
 	public void update(float delta) {
 		// TODO Auto-generated method stub
 		
 	}
-
 	@Override
 	public void renderEffect(SpriteBatch batch) {
 		// TODO Auto-generated method stub
@@ -46,5 +44,4 @@ public class HorizontalMovement implements MovementBehavior{
 	}
 
 
-	
 }

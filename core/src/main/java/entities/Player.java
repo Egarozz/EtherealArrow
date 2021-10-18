@@ -1,8 +1,10 @@
 package entities;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input.Buttons;
 import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
@@ -13,17 +15,20 @@ import com.dongbat.jbump.Item;
 import com.dongbat.jbump.Rect;
 import com.dongbat.jbump.Response;
 import com.dongbat.jbump.Response.Result;
+
+import behaviors.player.DashMovement;
+import behaviors.player.DoubleJump;
+import behaviors.player.HorizontalMovement;
+import behaviors.player.MovementBehavior;
+
 import com.dongbat.jbump.World;
 
-import behaviors.DashMovement;
-import behaviors.DoubleJump;
-import behaviors.HorizontalMovement;
-import behaviors.MovementBehavior;
+import main.FirstScreen;
 import space.earlygrey.shapedrawer.ShapeDrawer;
 import utils.Assets;
 import utils.SpriteAnimation;
 import utils.Utils;
-
+import static utils.GlobalVariables.worldTime;
 public class Player extends Entity{
 	Item<Entity> item;
 	CollisionFilter filter;
@@ -54,8 +59,16 @@ public class Player extends Entity{
 	
 	Array<MovementBehavior> behaviors;
 	
-	public Player(Vector2 position, AABB bounds, World<Entity> world) {
-		super(position, bounds, world);
+	Sprite arrow;
+	Vector2 arrowDirection;
+	FirstScreen fs;
+	
+	Array<Arrow> arrows;
+	
+	public Player(Vector2 position, World<Entity> world, FirstScreen fs) {
+		super(position, new AABB(new Vector2(0,0), new Vector2(10,18)), world);
+		this.fs = fs;
+		arrowDirection = new Vector2();
 		gravityY = -GRAVITY;
 		item = world.add(new Item<Entity>(this), bounds.getMin().x, bounds.getMin().y, bounds.getSize().x, bounds.getSize().y);
 		
@@ -76,6 +89,12 @@ public class Player extends Entity{
 		
 		loadAnimations();
 		current = idle;
+		
+		arrow = new Sprite(new Texture("Bow.png"));
+		arrow.setPosition(position.x, position.y);
+		
+		arrows = new Array<>();
+		
 	}
 	
 	public void loadAnimations() {
@@ -99,8 +118,16 @@ public class Player extends Entity{
 		
 		
 	}
+	
+	@Override
 	public void update(float delta) {
-		for(MovementBehavior m: behaviors) m.update(delta);
+		
+		float delt = delta*worldTime;
+		
+		
+		
+		
+		for(MovementBehavior m: behaviors) m.update(delt);
 		
 		if(Gdx.input.isKeyJustPressed(Keys.A)) {
 			
@@ -113,32 +140,23 @@ public class Player extends Entity{
 		if(Gdx.input.isKeyPressed(Keys.A)) {
 				
 			
-				for(MovementBehavior m: behaviors) m.left(delta);
+				for(MovementBehavior m: behaviors) m.left(delt);
 				
-				if(!left) {
-					running.flip();
-					idle.flip();
-					left = true;
-				}
+				
 				
 			}else if(Gdx.input.isKeyPressed(Keys.D)) {
 				
 				
-				for(MovementBehavior m: behaviors) m.right(delta);
-				
-				if(left) {
-					running.flip();
-					idle.flip();
-					left = false;
-				}
+				for(MovementBehavior m: behaviors) m.right(delt);
+			
 				
 			}else {
-				deltaX = Utils.approach(deltaX, 0f, RUN_ACCELERATION * delta);
+				deltaX = Utils.approach(deltaX, 0f, RUN_ACCELERATION * delt);
 				
 			}
 					
 			if(Gdx.input.isKeyJustPressed(Keys.SPACE)) {
-				for(MovementBehavior m: behaviors) m.jump(delta);
+				for(MovementBehavior m: behaviors) m.jump(delt);
 			}
 			
 			if(deltaX != 0 && deltaY == 0) {
@@ -147,12 +165,19 @@ public class Player extends Entity{
 				current = idle;
 			}
 			
+			if(Gdx.input.isButtonJustPressed(Buttons.LEFT)) {
+				arrows.add(new ExplosiveArrow(position, arrowDirection, world));
+			}
 			
-			deltaX += delta * gravityX;
-			deltaY += delta * gravityY;
-			position.x += delta * deltaX;
-			position.y += delta * deltaY;
-
+			
+			deltaX += delt * gravityX;
+			deltaY += delt * gravityY;
+			position.x += delt * deltaX;
+			position.y += delt * deltaY;
+			
+			
+			
+			
 			Result result = world.move(item, bounds.getMin().x, bounds.getMin().y, filter);
 			for (int i = 0; i < result.projectedCollisions.size(); i++) {
 	     		Collision collision = result.projectedCollisions.get(i);
@@ -173,13 +198,55 @@ public class Player extends Entity{
 				position.set(rect.x + bounds.getSize().x/2, rect.y + bounds.getSize().y/2);
 			}
 			
-			current.update(delta);
+
+			arrow.setPosition(position.x-20, position.y-15);	
+			if((arrowDirection.angleDeg() > 0 && arrowDirection.angleDeg() < 86) || 
+					(arrowDirection.angleDeg() > 276 && arrowDirection.angleDeg() < 360)) {
+				if(left) {
+					running.flip();
+					idle.flip();
+					left = false;
+					
+				}
+			}else if(arrowDirection.angleDeg() > 90 && arrowDirection.angleDeg() < 270){
+				if(!left) {
+					running.flip();
+					idle.flip();
+					left = true;
+					
+				}
+			}		
+				
+			
+				
+			arrow.setOrigin(21, 16);
+			arrow.setCenter(arrow.getX()+arrow.getWidth()/2, arrow.getY() + arrow.getHeight()/2);
+			arrowDirection.set(fs.mousePos.x - (arrow.getX() + arrow.getWidth()/2), fs.mousePos.y - (arrow.getY()+arrow.getHeight()/2));
+			arrow.setRotation(arrowDirection.angleDeg()+180);
+			
+			current.update(delt);
+			
+			for(int i = arrows.size-1; i >=0; i--) {
+				Arrow a = arrows.get(i);
+				
+				a.update(delt);
+				if(a.destroy) {
+					arrows.removeIndex(i);
+					world.remove(a.item);
+				}
+			}
 	}
 	
+	@Override
 	public void render(ShapeDrawer drawer, SpriteBatch batch) {
 		drawer.rectangle(bounds.getMin().x, bounds.getMin().y, bounds.getSize().x, bounds.getSize().y, Color.GREEN);
 		for(MovementBehavior m: behaviors) m.renderEffect(batch);
 		current.render(batch);
+		arrow.draw(batch);
+		
+		for(Arrow a: arrows) {
+			a.render(drawer,batch);
+		}
 	}
 	
 

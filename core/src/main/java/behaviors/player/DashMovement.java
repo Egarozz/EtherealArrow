@@ -1,4 +1,4 @@
-package behaviors;
+package behaviors.player;
 
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -7,6 +7,7 @@ import com.badlogic.gdx.utils.Array;
 
 import entities.Player;
 import utils.Assets;
+import utils.GlobalVariables;
 import utils.Utils;
 
 public class DashMovement implements MovementBehavior{
@@ -84,7 +85,7 @@ public class DashMovement implements MovementBehavior{
 	@Override
 	public void update(float delta) {
 		if(player.currentLeft == 1 || player.currentRight == 1) {
-			time+=delta;
+			time+=delta/GlobalVariables.worldTime;
 			if(time > 0.2f) {
 				player.currentLeft = 0;
 				player.currentRight = 0;
@@ -93,7 +94,7 @@ public class DashMovement implements MovementBehavior{
 		}
 			
 		if(!canDash) {
-			delay += delta;
+			delay += delta/GlobalVariables.worldTime;
 			if(delay > 2) {
 				canDash = true;
 				delay = 0;

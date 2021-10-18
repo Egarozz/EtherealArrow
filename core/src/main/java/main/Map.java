@@ -107,14 +107,20 @@ public class Map {
 		for(Rect r: bound) {
 			
 			//izquierda
-			if(!tiles.containsKey(String.valueOf((int)((r.getPosition().x-position.x)/32)) + "," + String.valueOf((int)((r.getPosition().y-position.y)/32) + 1))) correct.add(r);
+			if(!tiles.containsKey(String.valueOf((int)((r.getPosition().x-position.x)/32)) + "," + String.valueOf((int)((r.getPosition().y-position.y)/32) + 1))) {
+				correct.add(r);
+			}else if(!tiles.containsKey(String.valueOf((int)((r.getPosition().x-position.x)/32)) + "," + String.valueOf((int)((r.getPosition().y-position.y)/32) - 1))) {
 			//izquierda
-			if(!tiles.containsKey(String.valueOf((int)((r.getPosition().x-position.x)/32)) + "," + String.valueOf((int)((r.getPosition().y-position.y)/32) - 1))) correct.add(r);
+				correct.add(r);
+			}else if(!tiles.containsKey(String.valueOf((int)((r.getPosition().x-position.x)/32)+1) + "," + String.valueOf((int)((r.getPosition().y-position.y)/32)))) {
 			//izquierda
-			if(!tiles.containsKey(String.valueOf((int)((r.getPosition().x-position.x)/32)+1) + "," + String.valueOf((int)((r.getPosition().y-position.y)/32)))) correct.add(r);
+				correct.add(r);
 			//izquierda
-			if(!tiles.containsKey(String.valueOf((int)((r.getPosition().x-position.x)/32)-1) + "," + String.valueOf((int)((r.getPosition().y-position.y)/32)))) correct.add(r);
-			
+			}else if(!tiles.containsKey(String.valueOf((int)((r.getPosition().x-position.x)/32)-1) + "," + String.valueOf((int)((r.getPosition().y-position.y)/32)))) 
+				correct.add(r);
+			}
+		for(Rect r: correct) {
+			r.addToWorld();
 		}
 		
 		bound = correct;
@@ -134,9 +140,9 @@ public class Map {
 //		
 	}
 	
-	public void renderBounds(ShapeDrawer drawer) {
+	public void renderBounds(ShapeDrawer drawer, SpriteBatch batch) {
 		for(Rect r: bound) {
-			r.render(drawer);
+			r.render(drawer, batch);
 		}
 	}
 	public void renderBuildings(SpriteBatch batch) {

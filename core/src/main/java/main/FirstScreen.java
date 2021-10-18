@@ -11,6 +11,7 @@ import com.badlogic.gdx.graphics.Texture.TextureWrap;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.maps.tiled.renderers.OrthoCachedTiledMapRenderer;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Scaling;
 import com.badlogic.gdx.utils.viewport.FillViewport;
 import com.badlogic.gdx.utils.viewport.FitViewport;
@@ -33,9 +34,16 @@ public class FirstScreen implements Screen {
 	FillViewport viewport;
 	World<Entity> world;
 	Player player;
+	
+	Vector3 unprojected;
+	public Vector3 mousePos;
+	float camoffsetX = 0;
+	float camoffsetY = 0;
 	public FirstScreen(App app) {
 		this.app = app;
 		
+		unprojected = new Vector3();
+		mousePos = new Vector3();
 		
 		world = new World<>(32);
 		
@@ -54,8 +62,8 @@ public class FirstScreen implements Screen {
 		camera.position.x = 500;
 		camera.position.y = 400;
 		
-		AABB bounds = new AABB(new Vector2(0,0), new Vector2(10,20));
-		player = new Player(new Vector2(camera.position.x+100,camera.position.y-100), bounds, world);
+		
+		player = new Player(new Vector2(camera.position.x+100,camera.position.y-100), world, this);
 		
 		
 		
@@ -69,23 +77,36 @@ public class FirstScreen implements Screen {
 	public void render(float delta) {
 		Gdx.gl20.glClearColor(0, 0, 0, 1);
 		Gdx.gl20.glClear(GL20.GL_COLOR_BUFFER_BIT);
+		
+		unprojected.set(Gdx.input.getX(), Gdx.input.getY(), 0);
+		mousePos.set(camera.unproject(unprojected));
+		
 		camera.update();
 		player.update(delta);
 		app.batch.setProjectionMatrix(camera.combined);
 		
+		map.render(app.batch, app.drawer, camera);
+		
 		app.batch.begin();
 		app.batch.draw(background, (camera.position.x - 160)*0.95f, (camera.position.y-160)*0.98f);
-		map.renderBounds(app.drawer);
+		map.renderBounds(app.drawer, app.batch);
 		app.batch.end();
 		
 		
 		app.batch.begin();
-		map.render(app.batch, app.drawer, camera);
+		
 		map.renderBuildings(app.batch);
 		player.render(app.drawer, app.batch);
 		app.batch.end();
 		
-		camera.position.x += (player.getPosition().x - camera.position.x)*0.1f;
+		
+		if(Gdx.input.getX() > Gdx.graphics.getWidth()-40) {
+			
+			camoffsetX = 80;
+		}else {
+			camoffsetX = 0;
+		}
+		camera.position.x += ((player.getPosition().x+camoffsetX) - camera.position.x)*0.1f;
 		camera.position.y += (player.getPosition().y - camera.position.y)*0.1f;
 		
 		camera.position.x = MathUtils.clamp(camera.position.x, map.getMin()+144, map.getMax()-144);

@@ -1,7 +1,10 @@
 package entities;
 
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 import com.dongbat.jbump.World;
+
+import space.earlygrey.shapedrawer.ShapeDrawer;
 
 public abstract class Entity {
 
@@ -14,10 +17,14 @@ public abstract class Entity {
 		this.bounds = bounds;
 		
 		this.world = world;
-		bounds.setEntity(this);
+		
+		bounds.setPosition(position);
+		
 	}
 	
-
+	public abstract void update(float delta);
+	public abstract void render(ShapeDrawer drawer, SpriteBatch batch);
+	
 	public AABB getBounds() {
 		return bounds;
 	}
@@ -26,6 +33,13 @@ public abstract class Entity {
 	public Vector2 getPosition() {
 		return position;
 	}
+
+	public World<Entity> getWorld() {
+		return world;
+	}
+
+
+	
 	
 	
 }

@@ -1,4 +1,4 @@
-package behaviors;
+package behaviors.player;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
