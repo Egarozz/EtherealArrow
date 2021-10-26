@@ -2,7 +2,7 @@ package behaviors.player;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
-import entities.Player;
+import entities.player.Player;
 
 public class DoubleJump implements MovementBehavior{
 	Player player;

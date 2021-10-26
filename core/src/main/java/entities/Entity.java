@@ -2,6 +2,7 @@ package entities;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
+import com.dongbat.jbump.Item;
 import com.dongbat.jbump.World;
 
 import space.earlygrey.shapedrawer.ShapeDrawer;
@@ -11,6 +12,7 @@ public abstract class Entity {
 	protected Vector2 position;
 	protected AABB bounds;
 	protected World<Entity> world;
+	protected Item<Entity> item;
 	
 	public Entity(Vector2 position, AABB bounds, World<Entity> world) {
 		this.position = position;
@@ -19,7 +21,7 @@ public abstract class Entity {
 		this.world = world;
 		
 		bounds.setPosition(position);
-		
+		item = world.add(new Item<Entity>(this), bounds.getMin().x, bounds.getMin().y, bounds.getSize().x, bounds.getSize().y);
 	}
 	
 	public abstract void update(float delta);
@@ -30,6 +32,10 @@ public abstract class Entity {
 	}
 
 
+	public Item<Entity> getItem() {
+		return item;
+	}
+
 	public Vector2 getPosition() {
 		return position;
 	}
@@ -38,7 +44,9 @@ public abstract class Entity {
 		return world;
 	}
 
-
+	public void hit(Vector2 direction) {
+		
+	}
 	
 	
 	

@@ -1,4 +1,4 @@
-package main;
+package map;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -26,7 +26,7 @@ public class Rect extends Entity{
 	
 	@Override
 	public void render(ShapeDrawer drawer, SpriteBatch batch) {
-		drawer.rectangle(bounds.getMin().x, bounds.getMin().y, bounds.getSize().x, bounds.getSize().y, Color.GREEN);
+		//drawer.rectangle(bounds.getMin().x, bounds.getMin().y, bounds.getSize().x, bounds.getSize().y, Color.GREEN);
 	}
 
 	public Vector2 getPosition() {

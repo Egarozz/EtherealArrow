@@ -2,7 +2,7 @@ package behaviors.player;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
-import entities.Player;
+import entities.player.Player;
 import utils.Utils;
 
 public class HorizontalMovement implements MovementBehavior{

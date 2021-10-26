@@ -1,16 +1,14 @@
-package main;
+package map;
 
 
 
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Camera;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.SpriteCache;
-import com.badlogic.gdx.maps.MapObjects;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer.Cell;
@@ -24,6 +22,8 @@ import java.util.HashMap;
 import utils.Assets;
 import com.dongbat.jbump.World;
 
+import behaviors.flowfield.FTile;
+import behaviors.flowfield.FlowField;
 import entities.Entity;
 public class Map {
 	
@@ -40,16 +40,21 @@ public class Map {
 	Array<Sprite> buildings;
 	public int max = 0;
 	public int min = 9999;
+	
+	FlowField flowfield;
+	
 	public Map(String route, Vector2 position, World<Entity> world) {
 		map = Assets.getInstance().getTiledMap(route);
 		this.world = world;
 		tiles = new HashMap<>();
 		this.position = position;
 		
-		spriteCache= new SpriteCache();
+		spriteCache= new SpriteCache(8191, true);
+		
 		decoration = new Array<>();
 		bound = new Array<>();
 		buildings = new Array<>();
+		flowfield = new FlowField();
 		loadMap();
 		
 	}
@@ -69,6 +74,9 @@ public class Map {
 				Cell cellTile = layerTiles.getCell(i, j);
 				Cell cellDecor = layerDecor.getCell(i, j);
 				Cell cellBuilding = layerBuildings.getCell(i, j);
+				if(cellTile == null) {
+					flowfield.putTile(String.valueOf(i) + "," + String.valueOf(j), new FTile(new Vector2(position.x + 32*i -16,position.y+32*j -16)));
+				}
 				
 				if(cellTile != null) {
 					tiles.put(String.valueOf(i) + "," + String.valueOf(j), new Tile(cellTile.getTile().getTextureRegion(), 
@@ -92,12 +100,16 @@ public class Map {
 		
 		bound.add(new Rect(new Vector2(position.x+32*min-32, position.y),32,32*10000,world));
 		bound.add(new Rect(new Vector2(position.x+32*max+32, position.y),32,32*10000,world));
+		spriteCache.clear();
 		spriteCache.beginCache();
 		tiles.forEach((k,v) -> renderTile(v));
 		for(Sprite s: decoration) {
-			spriteCache.add(s);
+			spriteCache.add(s.getTexture(),s.getVertices(),0,20);
 		}
-		id = spriteCache.endCache();
+	    spriteCache.endCache();		
+		
+		System.out.println((decoration.size+tiles.size())*12);
+		
 		addBoundings();
 	}
 	
@@ -131,8 +143,9 @@ public class Map {
 		Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA); 
 		spriteCache.setProjectionMatrix(camera.combined);
 		spriteCache.begin();
-		spriteCache.draw(id);
+		spriteCache.draw(0);
 		spriteCache.end();
+		
 //		Gdx.gl.glDisable(GL20.GL_BLEND);
 //		for(Rect r: bound) {
 //			r.render(drawer);
@@ -140,6 +153,9 @@ public class Map {
 //		
 	}
 	
+	public FlowField getFlowField() {
+		return this.flowfield;
+	}
 	public void renderBounds(ShapeDrawer drawer, SpriteBatch batch) {
 		for(Rect r: bound) {
 			r.render(drawer, batch);
@@ -157,7 +173,7 @@ public class Map {
 		return position.x + 32*min;
 	}
 	private void renderTile(Tile tile) {
-		spriteCache.add(tile.sprite);
+		spriteCache.add(tile.sprite.getTexture(), tile.sprite.getVertices(),0, 20);
 	}	
 	
 }		

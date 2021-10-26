@@ -1,4 +1,4 @@
-package entities;
+package entities.player;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input.Buttons;
@@ -7,7 +7,12 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.scenes.scene2d.Actor;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Array;
 import com.dongbat.jbump.Collision;
 import com.dongbat.jbump.CollisionFilter;
@@ -20,21 +25,29 @@ import behaviors.player.DashMovement;
 import behaviors.player.DoubleJump;
 import behaviors.player.HorizontalMovement;
 import behaviors.player.MovementBehavior;
+import entities.AABB;
+import entities.Entity;
+import entities.arrow.Arrow;
+import entities.enemies.Enemy;
 
 import com.dongbat.jbump.World;
+import com.payne.games.piemenu.PieMenu;
 
 import main.FirstScreen;
 import space.earlygrey.shapedrawer.ShapeDrawer;
+import utils.ArrowFactory;
+import utils.Arrows;
 import utils.Assets;
+import utils.GlobalVariables;
 import utils.SpriteAnimation;
 import utils.Utils;
 import static utils.GlobalVariables.worldTime;
 public class Player extends Entity{
-	Item<Entity> item;
+	
 	CollisionFilter filter;
 	
 	public float FRICTION = 550f;
-	public float RUN_ACCELERATION = 1400f;
+	public float RUN_ACCELERATION = 1200f;
 	public float RUN_SPEED = 200f;
 	public float JUMP_SPEED = 400f;
 	public float BOUNCE_SPEED = 800f;
@@ -64,23 +77,26 @@ public class Player extends Entity{
 	FirstScreen fs;
 	
 	Array<Arrow> arrows;
+	ArrowFactory arrowFactory;
 	
+	boolean canshoot = true;
+	float shootTimer = 0;
+	private PieMenu menu;
+	private boolean blockShoot = false;
+	
+	private Arrows currentArrow;
 	public Player(Vector2 position, World<Entity> world, FirstScreen fs) {
 		super(position, new AABB(new Vector2(0,0), new Vector2(10,18)), world);
 		this.fs = fs;
 		arrowDirection = new Vector2();
 		gravityY = -GRAVITY;
-		item = world.add(new Item<Entity>(this), bounds.getMin().x, bounds.getMin().y, bounds.getSize().x, bounds.getSize().y);
 		
-		filter = new CollisionFilter() {
-
-			@Override
-			public Response filter(Item item, Item other) {
-				if(other.userData instanceof main.Rect) {
-					return Response.slide;
-				}
-				return null;
+		
+		filter = (item, other) -> {
+			if(other.userData instanceof map.Rect || other.userData instanceof Enemy) {
+				return Response.slide;
 			}
+			return null;
 		};
 		behaviors = new Array<>();
 		behaviors.add(new HorizontalMovement(this));
@@ -94,7 +110,60 @@ public class Player extends Entity{
 		arrow.setPosition(position.x, position.y);
 		
 		arrows = new Array<>();
+		arrowFactory = new ArrowFactory(fs);
 		
+		
+		PieMenu.PieMenuStyle style = new PieMenu.PieMenuStyle();
+		 style.background = new TextureRegionDrawable(new Texture(Gdx.files.internal("rael_pie.png")));
+		 style.selectedColor = new Color(1,.5f,.5f,.5f);
+		 menu = new PieMenu(new TextureRegion(new Texture("Pixel.png")), style, 80, 24f/80, 30) {
+	            /* Since we are using Images, we want to resize them to fit within each sector. */
+	            @Override
+	            public void modifyActor(Actor actor, float degreesPerChild, float actorDistanceFromCenter) {
+	                float size = getEstimatedRadiusAt(degreesPerChild, actorDistanceFromCenter);
+	                size *= 1.26f; // adjusting the returned value to our likes
+	                actor.setSize(size, size);
+	            }
+	            
+	        };
+	        menu.setInfiniteSelectionRange(true);
+	        menu.addListener(new ChangeListener() {
+	            @Override
+	            public void changed(ChangeEvent event, Actor actor) {
+	            	if(menu.getSelectedIndex() == 2) {
+	            		currentArrow = Arrows.Explosive;
+	            	}
+	            	if(menu.getSelectedIndex() == 0) {
+	            		currentArrow = Arrows.Normal;
+	            	}
+	            	if(menu.getSelectedIndex() == 3) {
+	            		currentArrow = Arrows.Teleport;
+	            	}
+	            	if(menu.getSelectedIndex() == 1) {
+	            		currentArrow = Arrows.Piercing;
+	            	}
+	            	System.out.println("ChangeListener - newly selected index: " + menu.getSelectedIndex());
+	            	blockShoot = false;
+	            	canshoot = true;
+					GlobalVariables.worldTime = 1f;
+					GlobalVariables.blockTime = false;
+	            	menu.setVisible(false);
+	                menu.remove();
+	            }
+	        });
+	        Array<Image> imgs = new Array<>();
+	        imgs.add(new Image(new Texture(Gdx.files.internal("NormalArrow.png"))));
+	        imgs.add(new Image(new Texture(Gdx.files.internal("PiercingArrow.png"))));
+	        imgs.add(new Image(new Texture(Gdx.files.internal("ExplosionArrow.png"))));
+	        imgs.add(new Image(new Texture(Gdx.files.internal("TeleportArrow.png"))));
+	        imgs.add(new Image());
+	        imgs.add(new Image());
+	        
+	        for (int i = 0; i < imgs.size; i++)
+	            menu.addActor(imgs.get(i));
+	            
+	        
+	        currentArrow = Arrows.Normal;
 	}
 	
 	public void loadAnimations() {
@@ -122,12 +191,18 @@ public class Player extends Entity{
 	@Override
 	public void update(float delta) {
 		
-		float delt = delta*worldTime;
 		
 		
+		if(!canshoot && !blockShoot) {
+			shootTimer += delta/GlobalVariables.worldTime;
+			if(shootTimer > 0.5f) {
+				canshoot = true;
+				shootTimer = 0;
+			}
+		}
 		
 		
-		for(MovementBehavior m: behaviors) m.update(delt);
+		for(MovementBehavior m: behaviors) m.update(delta);
 		
 		if(Gdx.input.isKeyJustPressed(Keys.A)) {
 			
@@ -140,23 +215,23 @@ public class Player extends Entity{
 		if(Gdx.input.isKeyPressed(Keys.A)) {
 				
 			
-				for(MovementBehavior m: behaviors) m.left(delt);
+				for(MovementBehavior m: behaviors) m.left(delta);
 				
 				
 				
 			}else if(Gdx.input.isKeyPressed(Keys.D)) {
 				
 				
-				for(MovementBehavior m: behaviors) m.right(delt);
+				for(MovementBehavior m: behaviors) m.right(delta);
 			
 				
 			}else {
-				deltaX = Utils.approach(deltaX, 0f, RUN_ACCELERATION * delt);
+				deltaX = Utils.approach(deltaX, 0f, RUN_ACCELERATION * delta);
 				
 			}
 					
 			if(Gdx.input.isKeyJustPressed(Keys.SPACE)) {
-				for(MovementBehavior m: behaviors) m.jump(delt);
+				for(MovementBehavior m: behaviors) m.jump(delta);
 			}
 			
 			if(deltaX != 0 && deltaY == 0) {
@@ -165,15 +240,16 @@ public class Player extends Entity{
 				current = idle;
 			}
 			
-			if(Gdx.input.isButtonJustPressed(Buttons.LEFT)) {
-				arrows.add(new ExplosiveArrow(position, arrowDirection, world));
+			if(Gdx.input.isButtonPressed(Buttons.LEFT) && canshoot) {
+				arrows.add(arrowFactory.getArrow(currentArrow, position, arrowDirection));
+				canshoot = false;
 			}
 			
 			
-			deltaX += delt * gravityX;
-			deltaY += delt * gravityY;
-			position.x += delt * deltaX;
-			position.y += delt * deltaY;
+			deltaX += delta * gravityX;
+			deltaY += delta * gravityY;
+			position.x += delta * deltaX;
+			position.y += delta * deltaY;
 			
 			
 			
@@ -224,17 +300,32 @@ public class Player extends Entity{
 			arrowDirection.set(fs.mousePos.x - (arrow.getX() + arrow.getWidth()/2), fs.mousePos.y - (arrow.getY()+arrow.getHeight()/2));
 			arrow.setRotation(arrowDirection.angleDeg()+180);
 			
-			current.update(delt);
+			current.update(delta);
 			
 			for(int i = arrows.size-1; i >=0; i--) {
 				Arrow a = arrows.get(i);
 				
-				a.update(delt);
-				if(a.destroy) {
+				a.update(delta);
+				if(a.isDestroy()) {
+					
 					arrows.removeIndex(i);
-					world.remove(a.item);
+					world.remove(a.getItem());
+					arrowFactory.freeArrow(a);
+					
 				}
 			}
+			
+			if(Gdx.input.isKeyJustPressed(Keys.C)) {
+				canshoot = false;
+				blockShoot = true;
+				GlobalVariables.worldTime = 0.05f;
+				GlobalVariables.blockTime = true;
+				fs.stage.addActor(menu);
+	            menu.centerOnMouse();
+	            menu.resetSelection();
+	            menu.setVisible(true);
+			}
+			
 	}
 	
 	@Override

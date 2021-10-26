@@ -2,13 +2,11 @@ package behaviors.player;
 
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 
-import entities.Player;
+import entities.player.Player;
 import utils.Assets;
 import utils.GlobalVariables;
-import utils.Utils;
 
 public class DashMovement implements MovementBehavior{
 	private float RENDER_INTERVAL = 0.02f;
