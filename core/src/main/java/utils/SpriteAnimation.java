@@ -13,23 +13,24 @@ public class SpriteAnimation {
 	private Animation<Sprite> animation;
 	private Vector2 position;
 	private Sprite current;
+	private Array<Sprite> sprites;
 	public SpriteAnimation(Vector2 position, Array<Sprite> frames, float vel) {
 		this.position = position;
 		
 		animation = new Animation<Sprite>(vel, frames, PlayMode.LOOP);
-		
+		this.sprites = frames;
 		current = animation.getKeyFrame(0);
 		updatePosition();
 	}
 	
 	public void flip() {
-		for(Object a: animation.getKeyFrames()) {
+		for(Sprite a: sprites) {
 			Sprite s = (Sprite) a;
 			s.flip(true, false);
 		}
 	}
 	public void updatePosition() {
-		for(Object a: animation.getKeyFrames()) {
+		for(Sprite a: sprites) {
 			Sprite s = (Sprite) a;
 			s.setPosition(position.x-s.getWidth()/2, position.y-s.getHeight()/2);
 		}
